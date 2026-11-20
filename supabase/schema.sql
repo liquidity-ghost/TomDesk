@@ -33,6 +33,11 @@ create trigger boards_set_updated_at
   for each row
   execute function public.set_boards_updated_at();
 
+-- Explicit table privileges required alongside RLS policies
+grant usage on schema public to anon, authenticated;
+grant select, insert, update, delete on table public.boards to anon, authenticated;
+grant execute on function public.set_boards_updated_at() to anon, authenticated;
+
 -- Enable Row Level Security.
 -- Note: Access to the TomDesk app is gated at the Next.js edge by the server-verified
 -- HUB_PIN session cookie; once unlocked on a device, tutor and students share full
@@ -111,3 +116,5 @@ create policy "board_assets_delete"
   for delete
   to anon, authenticated
   using (bucket_id = 'board-assets');
+
+notify pgrst, 'reload schema';
