@@ -1,11 +1,22 @@
 import type { Metadata } from 'next';
+import { ThemeProvider } from '@/components/theme/ThemeProvider';
 import './globals.css';
 
 export const metadata: Metadata = {
-  title: 'TomDesk — Collaborative Tutoring Whiteboard',
+  title: "Tom's Study Desk",
   description:
-    'High-performance real-time collaborative tutoring whiteboard for Isla, India, and Ivy.',
+    'A personal collaborative study desk and notebook for Isla, India, and Ivy.',
 };
+
+const THEME_INIT_SCRIPT = `
+(function() {
+  try {
+    if (localStorage.getItem('tomdesk-theme') === 'dark') {
+      document.documentElement.classList.add('dark');
+    }
+  } catch (e) {}
+})();
+`;
 
 export default function RootLayout({
   children,
@@ -13,9 +24,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
-      <body className="bg-slate-50 font-sans text-slate-900 antialiased">
-        {children}
+    <html lang="en" suppressHydrationWarning>
+      <head>
+        <script dangerouslySetInnerHTML={{ __html: THEME_INIT_SCRIPT }} />
+      </head>
+      <body className="bg-desk-canvas font-sans text-desk-body antialiased">
+        <ThemeProvider>{children}</ThemeProvider>
       </body>
     </html>
   );
