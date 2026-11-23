@@ -112,10 +112,10 @@ export function StudentWorkspace({ student }: StudentWorkspaceProps) {
   }, [activeBoard, student]);
 
   return (
-    <div className="flex h-screen w-screen flex-col overflow-hidden bg-slate-100">
+    <div className="flex h-screen w-screen flex-col overflow-hidden bg-desk-canvas">
       <WorkspaceHeader
         student={student}
-        boardTitle={activeBoard?.title ?? `${student}'s Workspace`}
+        boardTitle={activeBoard?.title ?? `${student}'s Notebook`}
         sidebarOpen={sidebarOpen}
         isLive={isLive}
         peerCount={peerCount}
@@ -132,28 +132,20 @@ export function StudentWorkspace({ student }: StudentWorkspaceProps) {
       />
 
       {!configured && !setupDismissed && (
-        <div className="flex items-center justify-between gap-3 border-b border-amber-200 bg-amber-50 px-4 py-2 text-xs text-amber-900">
+        <div className="flex items-center justify-between gap-3 border-b border-amber-300/60 bg-amber-50 px-4 py-2 text-xs text-amber-900 dark:border-amber-500/30 dark:bg-amber-950/50 dark:text-amber-200">
           <div className="flex items-center gap-2">
-            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600" />
+            <AlertCircle className="h-4 w-4 shrink-0 text-amber-600 dark:text-amber-400" />
             <span>
-              <strong>Local Demo Mode:</strong> Add{' '}
-              <code className="rounded bg-amber-100 px-1 py-0.5 font-mono">
-                NEXT_PUBLIC_SUPABASE_URL
-              </code>{' '}
-              and{' '}
-              <code className="rounded bg-amber-100 px-1 py-0.5 font-mono">
-                NEXT_PUBLIC_SUPABASE_ANON_KEY
-              </code>{' '}
-              in <code className="font-mono">.env.local</code> and run{' '}
-              <code className="font-mono">supabase/schema.sql</code> to enable cloud
-              persistence &amp; live multiplayer sync.
+              <strong>Offline Practice Mode:</strong> Add your Supabase keys in{' '}
+              <code className="font-mono">.env.local</code> to save lessons and
+              draw together live.
             </span>
           </div>
           <button
             type="button"
             onClick={() => setSetupDismissed(true)}
             aria-label="Dismiss setup notice"
-            className="rounded p-1 text-amber-700 hover:bg-amber-100"
+            className="rounded p-1 text-amber-700 hover:bg-amber-100 dark:text-amber-300 dark:hover:bg-amber-900/50"
           >
             <X className="h-3.5 w-3.5" />
           </button>
@@ -161,7 +153,7 @@ export function StudentWorkspace({ student }: StudentWorkspaceProps) {
       )}
 
       {error && (
-        <div className="border-b border-rose-200 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700">
+        <div className="border-b border-rose-300 bg-rose-50 px-4 py-2 text-xs font-medium text-rose-700 dark:border-rose-500/40 dark:bg-rose-950/60 dark:text-rose-200">
           {error}
         </div>
       )}
@@ -183,10 +175,10 @@ export function StudentWorkspace({ student }: StudentWorkspaceProps) {
 
         <main className="relative flex min-w-0 flex-1 overflow-hidden">
           {loadingList || loadingBoard || !activeBoard ? (
-            <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-[#eef2f7] text-slate-500">
-              <Loader2 className="h-7 w-7 animate-spin text-indigo-600" />
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 bg-desk-canvas text-desk-muted">
+              <Loader2 className="h-7 w-7 animate-spin text-desk-accent" />
               <p className="text-sm font-medium">
-                Loading {student}&apos;s whiteboard...
+                Opening {student}&apos;s notebook...
               </p>
             </div>
           ) : (

@@ -16,6 +16,7 @@ import {
   PanelLeftOpen,
   PenTool,
 } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { cn } from '@/lib/utils';
 import { STUDENTS, STUDENT_META, type StudentName, type SyncStatus } from '@/types/board';
 
@@ -107,15 +108,15 @@ export function WorkspaceHeader({
   }
 
   return (
-    <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-slate-200 bg-white px-3 sm:px-4">
-      {/* Left: Sidebar toggle + Brand + Student Workspace Tabs */}
+    <header className="relative z-30 flex h-14 shrink-0 items-center justify-between gap-3 border-b border-desk-border bg-desk-surface px-3 sm:px-4">
+      {/* Left: Sidebar toggle + Brand + Student Tabs */}
       <div className="flex min-w-0 items-center gap-2 sm:gap-3">
         <button
           type="button"
           onClick={onToggleSidebar}
-          title={sidebarOpen ? 'Hide boards sidebar' : 'Show boards sidebar'}
-          aria-label={sidebarOpen ? 'Hide boards sidebar' : 'Show boards sidebar'}
-          className="rounded-lg p-2 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+          title={sidebarOpen ? 'Hide past lessons' : 'Show past lessons'}
+          aria-label={sidebarOpen ? 'Hide past lessons' : 'Show past lessons'}
+          className="rounded-lg p-2 text-desk-muted transition-colors hover:bg-desk-hover hover:text-desk-heading"
         >
           {sidebarOpen ? (
             <PanelLeftClose className="h-4 w-4" />
@@ -129,20 +130,20 @@ export function WorkspaceHeader({
           onClick={() => {
             if (onBeforeNavigate) void onBeforeNavigate();
           }}
-          className="hidden items-center gap-2 rounded-lg px-1.5 py-1 text-slate-900 transition-colors hover:bg-slate-50 md:flex"
+          className="hidden items-center gap-2 rounded-lg px-1.5 py-1 text-desk-heading transition-colors hover:bg-desk-hover md:flex"
         >
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-white shadow-sm">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-desk-primary text-desk-primary-fg shadow-sm">
             <PenTool className="h-3.5 w-3.5" />
           </span>
-          <span className="text-sm font-bold tracking-tight">TomDesk</span>
+          <span className="text-sm font-bold tracking-tight">Tom&apos;s Desk</span>
         </Link>
 
-        <div className="hidden h-5 w-px bg-slate-200 md:block" />
+        <div className="hidden h-5 w-px bg-desk-border md:block" />
 
         {/* Student Navigation Pills */}
         <nav
-          aria-label="Student workspaces"
-          className="flex items-center rounded-xl bg-slate-100/90 p-1"
+          aria-label="Notebooks"
+          className="flex items-center rounded-xl bg-desk-surface-muted p-1 ring-1 ring-desk-border"
         >
           {STUDENTS.map((name) => {
             const meta = STUDENT_META[name];
@@ -157,8 +158,8 @@ export function WorkspaceHeader({
                 className={cn(
                   'rounded-lg px-2.5 py-1 text-xs font-semibold transition-all sm:px-3',
                   active
-                    ? meta.activeNavClass
-                    : 'text-slate-600 hover:text-slate-900'
+                    ? 'bg-desk-primary text-desk-primary-fg shadow-sm'
+                    : 'text-desk-muted hover:text-desk-heading'
                 )}
               >
                 {name}
@@ -167,9 +168,9 @@ export function WorkspaceHeader({
           })}
         </nav>
 
-        {/* Active Board Title */}
+        {/* Active Page Title */}
         <div className="hidden min-w-0 items-center lg:flex">
-          <span className="mr-2 text-slate-300">/</span>
+          <span className="mr-2 text-desk-border-strong">/</span>
           {editingTitle ? (
             <input
               ref={titleInputRef}
@@ -184,14 +185,14 @@ export function WorkspaceHeader({
                   setEditingTitle(false);
                 }
               }}
-              className="w-52 rounded-lg border border-indigo-400 bg-white px-2 py-1 text-sm font-medium text-slate-900 focus:outline-none"
+              className="w-52 rounded-lg border border-desk-primary bg-desk-surface px-2 py-1 text-sm font-medium text-desk-heading focus:outline-none"
             />
           ) : (
             <button
               type="button"
               onDoubleClick={() => setEditingTitle(true)}
-              title="Double-click to rename board"
-              className="max-w-[220px] truncate rounded-lg px-2 py-1 text-sm font-semibold text-slate-700 hover:bg-slate-100"
+              title="Double-click to rename lesson"
+              className="max-w-[220px] truncate rounded-lg px-2 py-1 text-sm font-semibold text-desk-heading hover:bg-desk-hover"
             >
               {boardTitle}
             </button>
@@ -199,16 +200,16 @@ export function WorkspaceHeader({
         </div>
       </div>
 
-      {/* Right: Live Presence + Sync Badge + Export + Lock */}
+      {/* Right: Live Presence + Sync Badge + Export + Theme Toggle + Lock */}
       <div className="flex shrink-0 items-center gap-2">
         {isLive && (
           <div
-            title={`${peerCount} participants connected in real time`}
-            className="inline-flex items-center gap-1.5 rounded-full border border-emerald-200 bg-emerald-50 px-2.5 py-1 text-xs font-semibold text-emerald-700"
+            title={`${peerCount} together on this page`}
+            className="inline-flex items-center gap-1.5 rounded-full border border-desk-accent/40 bg-desk-accent-soft px-2.5 py-1 text-xs font-semibold text-desk-accent"
           >
             <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-emerald-500" />
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-desk-accent opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-desk-accent" />
             </span>
             Live
           </div>
@@ -219,11 +220,11 @@ export function WorkspaceHeader({
           className={cn(
             'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-xs font-medium',
             syncStatus === 'saved' &&
-              'border-slate-200 bg-slate-50 text-slate-600',
+              'border-desk-border bg-desk-surface-muted text-desk-muted',
             syncStatus === 'saving' &&
-              'border-indigo-200 bg-indigo-50 text-indigo-700',
+              'border-desk-accent/40 bg-desk-accent-soft text-desk-heading',
             (syncStatus === 'offline' || syncStatus === 'error') &&
-              'border-amber-200 bg-amber-50 text-amber-800'
+              'border-amber-300 bg-amber-50 text-amber-800 dark:border-amber-500/40 dark:bg-amber-950/60 dark:text-amber-200'
           )}
         >
           {syncStatus === 'saved' && (
@@ -234,13 +235,13 @@ export function WorkspaceHeader({
           )}
           {syncStatus === 'saving' && (
             <>
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              <Loader2 className="h-3.5 w-3.5 animate-spin text-desk-accent" />
               <span className="hidden sm:inline">Saving...</span>
             </>
           )}
           {(syncStatus === 'offline' || syncStatus === 'error') && (
             <>
-              <CloudOff className="h-3.5 w-3.5 text-amber-600" />
+              <CloudOff className="h-3.5 w-3.5 text-amber-600 dark:text-amber-400" />
               <span>Offline — Retrying</span>
             </>
           )}
@@ -252,51 +253,53 @@ export function WorkspaceHeader({
             type="button"
             disabled={exporting !== null}
             onClick={() => setExportOpen((prev) => !prev)}
-            className="inline-flex items-center gap-1.5 rounded-xl border border-slate-200 bg-white px-3 py-1.5 text-xs font-semibold text-slate-700 shadow-sm transition-colors hover:bg-slate-50 disabled:opacity-60"
+            className="inline-flex h-8 items-center gap-1.5 rounded-xl border border-desk-border bg-desk-surface px-3 text-xs font-semibold text-desk-heading shadow-sm transition-colors hover:border-desk-border-strong hover:bg-desk-hover disabled:opacity-60"
           >
             {exporting ? (
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : (
               <Download className="h-3.5 w-3.5" />
             )}
-            <span className="hidden sm:inline">Export Board</span>
-            <ChevronDown className="h-3.5 w-3.5 text-slate-400" />
+            <span className="hidden sm:inline">Export</span>
+            <ChevronDown className="h-3.5 w-3.5 text-desk-muted" />
           </button>
 
           {exportOpen && (
-            <div className="absolute right-0 mt-2 w-52 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl">
+            <div className="absolute right-0 mt-2 w-52 rounded-xl border border-desk-border bg-desk-surface p-1.5 shadow-xl">
               <button
                 type="button"
                 onClick={() => void handleExport('png')}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-desk-body hover:bg-desk-hover"
               >
-                <FileImage className="h-4 w-4 text-indigo-600" />
+                <FileImage className="h-4 w-4 text-desk-heading" />
                 <div>
-                  <p className="font-semibold text-slate-800">High-Res PNG</p>
-                  <p className="text-[11px] text-slate-400">2x Retina snapshot</p>
+                  <p className="font-semibold text-desk-heading">Save as PNG</p>
+                  <p className="text-[11px] text-desk-muted">Crisp page snapshot</p>
                 </div>
               </button>
               <button
                 type="button"
                 onClick={() => void handleExport('pdf')}
-                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-slate-700 hover:bg-slate-50"
+                className="flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-left text-xs font-medium text-desk-body hover:bg-desk-hover"
               >
-                <FileText className="h-4 w-4 text-rose-600" />
+                <FileText className="h-4 w-4 text-desk-accent" />
                 <div>
-                  <p className="font-semibold text-slate-800">Multi-Page PDF</p>
-                  <p className="text-[11px] text-slate-400">Each sheet as a page</p>
+                  <p className="font-semibold text-desk-heading">Save as PDF</p>
+                  <p className="text-[11px] text-desk-muted">Multi-page packet</p>
                 </div>
               </button>
             </div>
           )}
         </div>
 
+        <ThemeToggle />
+
         <button
           type="button"
           onClick={() => void handleLockHub()}
-          title="Lock Hub (return to PIN screen)"
-          aria-label="Lock Hub"
-          className="rounded-xl border border-slate-200 p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-800"
+          title="Lock Study Desk"
+          aria-label="Lock Study Desk"
+          className="inline-flex h-8 w-8 items-center justify-center rounded-xl border border-desk-border bg-desk-surface text-desk-muted transition-colors hover:border-desk-border-strong hover:bg-desk-hover hover:text-desk-heading"
         >
           <Lock className="h-4 w-4" />
         </button>

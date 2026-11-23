@@ -51,7 +51,7 @@ export async function getBoardById(boardId: string): Promise<BoardRecord | null>
 
 export async function createBoard(
   student: StudentName,
-  title = 'Untitled Board'
+  title = 'Untitled Page'
 ): Promise<BoardRecord> {
   const supabase = getSupabaseClient();
   if (!supabase) {
@@ -63,7 +63,7 @@ export async function createBoard(
     .from('boards')
     .insert({
       student_name: student,
-      title: title.trim() || 'Untitled Board',
+      title: title.trim() || 'Untitled Page',
       scene_data: initialScene,
     })
     .select('id, student_name, title, scene_data, created_at, updated_at')
@@ -89,7 +89,7 @@ export async function renameBoard(boardId: string, title: string): Promise<strin
     throw new Error('Supabase is not configured.');
   }
 
-  const cleanTitle = title.trim() || 'Untitled Board';
+  const cleanTitle = title.trim() || 'Untitled Page';
   const nowIso = new Date().toISOString();
 
   const { data, error } = await supabase

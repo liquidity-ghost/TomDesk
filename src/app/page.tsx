@@ -1,26 +1,30 @@
 import Link from 'next/link';
-import { ArrowRight, Layers, PenTool, Sparkles } from 'lucide-react';
+import { ArrowRight, BookOpen, PenTool } from 'lucide-react';
+import { ThemeToggle } from '@/components/theme/ThemeToggle';
 import { STUDENTS, STUDENT_META } from '@/types/board';
 
 export default function HubHomePage() {
   return (
-    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-slate-50 px-6 py-16">
+    <main className="relative flex min-h-screen flex-col items-center justify-center overflow-hidden bg-desk-canvas px-6 py-16">
       <div
         aria-hidden="true"
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(#cbd5e1_1px,transparent_1px)] [background-size:24px_24px] opacity-60"
+        className="bg-desk-dots pointer-events-none absolute inset-0 opacity-85"
       />
+
+      <div className="absolute right-4 top-4 z-20 sm:right-6 sm:top-6">
+        <ThemeToggle />
+      </div>
 
       <div className="relative z-10 w-full max-w-4xl">
         <div className="mb-10 text-center">
-          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-indigo-600 text-white shadow-lg shadow-indigo-500/25">
+          <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-2xl bg-desk-primary text-desk-primary-fg shadow-lg">
             <PenTool className="h-6 w-6" />
           </div>
-          <h1 className="text-3xl font-bold tracking-tight text-slate-900 sm:text-4xl">
-            TomDesk Tutoring Hub
+          <h1 className="text-3xl font-bold tracking-tight text-desk-heading sm:text-4xl">
+            Hey! Whose notebook are we opening today?
           </h1>
-          <p className="mx-auto mt-2.5 max-w-xl text-sm text-slate-600 sm:text-base">
-            Select a student workspace below to open saved boards, annotate PDFs
-            side-by-side on lined or graph paper, and collaborate in real time.
+          <p className="mx-auto mt-2.5 max-w-xl text-sm text-desk-muted sm:text-base">
+            Pick your space below to look over past lessons or work together live.
           </p>
         </div>
 
@@ -31,42 +35,31 @@ export default function HubHomePage() {
               <Link
                 key={name}
                 href={meta.href}
-                className={`group flex flex-col justify-between rounded-2xl border border-slate-200/90 bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-xl ${meta.cardBorderHoverClass}`}
+                className="group flex flex-col justify-between rounded-2xl border border-desk-border bg-desk-surface p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-desk-accent hover:shadow-xl"
               >
                 <div>
                   <div className="flex items-center justify-between">
-                    <span
-                      className={`inline-flex items-center gap-2 rounded-full px-3 py-1 text-xs font-semibold ${meta.badgeBgClass} ${meta.badgeTextClass}`}
-                    >
-                      <span className={`h-2 w-2 rounded-full ${meta.dotClass}`} />
-                      Student Workspace
+                    <span className="inline-flex h-10 w-10 items-center justify-center rounded-xl bg-desk-accent-soft text-sm font-bold text-desk-accent">
+                      {meta.initial}
                     </span>
-                    <Layers className="h-4 w-4 text-slate-300 transition-colors group-hover:text-slate-500" />
+                    <BookOpen className="h-4 w-4 text-desk-muted transition-colors group-hover:text-desk-accent" />
                   </div>
 
-                  <h2 className="mt-5 text-2xl font-bold text-slate-900">
+                  <h2 className="mt-5 text-2xl font-bold text-desk-heading">
                     {meta.name}
                   </h2>
-                  <p className="mt-1.5 text-sm text-slate-500">
-                    Open {meta.name}&apos;s live tutoring boards, uploaded PDFs, and
-                    saved lessons.
+                  <p className="mt-1.5 text-sm leading-relaxed text-desk-muted">
+                    {meta.description}
                   </p>
                 </div>
 
-                <div className="mt-6 flex items-center justify-between border-t border-slate-100 pt-4 text-sm font-semibold text-slate-700 group-hover:text-indigo-600">
-                  <span>Enter {meta.href}</span>
+                <div className="mt-6 flex items-center justify-between border-t border-desk-border pt-4 text-sm font-semibold text-desk-heading transition-colors group-hover:text-desk-accent">
+                  <span>Open Notebook</span>
                   <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-1" />
                 </div>
               </Link>
             );
           })}
-        </div>
-
-        <div className="mt-8 flex items-center justify-center gap-2 text-xs text-slate-400">
-          <Sparkles className="h-3.5 w-3.5" />
-          <span>
-            Supports Wacom / XPPen stylus pressure, side-by-side PDFs, and Area Snip
-          </span>
         </div>
       </div>
     </main>

@@ -40,7 +40,7 @@ export function useBoards(student: StudentName, requestedBoardId: string | null)
         const demoBoard: BoardRecord = {
           id: `local-${student.toLowerCase()}`,
           student_name: student,
-          title: `${student}'s Demo Board`,
+          title: `${student}'s Notebook`,
           created_at: now,
           updated_at: now,
           scene_data: createEmptySceneData(),
@@ -66,7 +66,7 @@ export function useBoards(student: StudentName, requestedBoardId: string | null)
         if (cancelled) return;
 
         if (list.length === 0) {
-          const initial = await createBoard(student, `${student}'s First Board`);
+          const initial = await createBoard(student, `${student}'s First Lesson`);
           if (cancelled) return;
           setBoards([
             {
@@ -133,7 +133,7 @@ export function useBoards(student: StudentName, requestedBoardId: string | null)
 
   const createNewBoard = useCallback(
     async (title?: string): Promise<BoardRecord | null> => {
-      const boardTitle = title?.trim() || `Session ${boards.length + 1}`;
+      const boardTitle = title?.trim() || `Lesson ${boards.length + 1}`;
       if (!configured) {
         const now = new Date().toISOString();
         const local: BoardRecord = {
@@ -182,7 +182,7 @@ export function useBoards(student: StudentName, requestedBoardId: string | null)
 
   const renameBoardTitle = useCallback(
     async (boardId: string, nextTitle: string) => {
-      const clean = nextTitle.trim() || 'Untitled Board';
+      const clean = nextTitle.trim() || 'Untitled Page';
       const optimisticTime = new Date().toISOString();
 
       setBoards((prev) =>
@@ -233,7 +233,7 @@ export function useBoards(student: StudentName, requestedBoardId: string | null)
             setLoadingBoard(false);
           }
         } else {
-          const fresh = await createNewBoard(`${student}'s Board`);
+          const fresh = await createNewBoard(`${student}'s Lesson`);
           setActiveBoard(fresh);
         }
       }

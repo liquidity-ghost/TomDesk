@@ -81,14 +81,14 @@ export async function POST(req: NextRequest) {
   }
 
   if (!submittedPin) {
-    return NextResponse.json({ error: 'Please enter the hub PIN.' }, { status: 400 });
+    return NextResponse.json({ error: 'Please enter the passcode.' }, { status: 400 });
   }
 
   const valid = await verifyPinConstantTime(submittedPin, expectedPin);
   if (!valid) {
     recordFailure(clientIp);
     return NextResponse.json(
-      { error: 'Incorrect PIN. Please try again.' },
+      { error: "That passcode didn't match — please try again." },
       { status: 401 }
     );
   }
