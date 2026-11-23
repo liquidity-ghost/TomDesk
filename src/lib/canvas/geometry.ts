@@ -6,6 +6,7 @@ import {
   type Camera,
   type PaperObject,
   type PdfPageObject,
+  type PhotoObject,
   type SceneObject,
   type ShapeKind,
   type ShapeObject,
@@ -68,6 +69,7 @@ export function getObjectBBox(obj: SceneObject): BBox {
     case 'paper':
     case 'pdf-page':
     case 'snip':
+    case 'photo':
       return {
         minX: obj.x,
         minY: obj.y,
@@ -242,6 +244,7 @@ export function hitTestObject(
     case 'shape':
       return hitTestShape(wx, wy, obj, zoom);
     case 'snip':
+    case 'photo':
     case 'paper':
     case 'pdf-page': {
       const box = getObjectBBox(obj);
@@ -256,6 +259,7 @@ export function getLayerPriority(obj: SceneObject): number {
     case 'pdf-page':
       return 1;
     case 'snip':
+    case 'photo':
       return 2;
     case 'shape':
       return 3;
@@ -377,6 +381,7 @@ export function translateObject<T extends SceneObject>(
     case 'paper':
     case 'pdf-page':
     case 'snip':
+    case 'photo':
       return {
         ...obj,
         x: obj.x + dx,
@@ -425,7 +430,8 @@ export function scaleObjectInBounds<T extends SceneObject>(
     }
     case 'paper':
     case 'pdf-page':
-    case 'snip': {
+    case 'snip':
+    case 'photo': {
       const x1 = mapX(obj.x);
       const y1 = mapY(obj.y);
       const x2 = mapX(obj.x + obj.width);
@@ -544,8 +550,8 @@ export function computeNextPaperPosition(
   viewportHeight: number
 ): { x: number; y: number } {
   const sheets = Object.values(objects).filter(
-    (obj): obj is PaperObject | PdfPageObject =>
-      obj.type === 'paper' || obj.type === 'pdf-page'
+    (obj): obj is PaperObject | PdfPageObject | PhotoObject =>
+      obj.type === 'paper' || obj.type === 'pdf-page' || obj.type === 'photo'
   );
 
   if (sheets.length === 0) {

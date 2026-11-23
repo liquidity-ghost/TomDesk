@@ -69,14 +69,14 @@ function TemplateThumbnail({ type }: { type: PaperTemplateType }) {
 export function PaperTemplateMenu({ onSelect, onClose }: PaperTemplateMenuProps) {
   return (
     <div
-      className="w-72 rounded-2xl border border-slate-200/90 bg-white/95 p-3 shadow-2xl backdrop-blur-md"
+      className="w-72 rounded-2xl border border-desk-border bg-desk-surface/95 p-3 shadow-2xl backdrop-blur-md"
       role="menu"
     >
       <div className="mb-2 flex items-center justify-between px-1">
-        <span className="text-xs font-semibold uppercase tracking-wider text-slate-500">
-          Insert A4 Paper Sheet
+        <span className="text-xs font-semibold uppercase tracking-wider text-desk-muted">
+          Add Paper Sheet
         </span>
-        <span className="text-[11px] text-slate-400">Places side-by-side</span>
+        <span className="text-[11px] text-desk-muted">Places side-by-side</span>
       </div>
       <div className="grid grid-cols-1 gap-1.5">
         {PAPER_TEMPLATES.map((tpl) => (
@@ -87,12 +87,12 @@ export function PaperTemplateMenu({ onSelect, onClose }: PaperTemplateMenuProps)
               onSelect(tpl.id);
               onClose();
             }}
-            className="flex items-center gap-3 rounded-xl border border-transparent p-2 text-left transition-colors hover:border-indigo-200 hover:bg-indigo-50/60"
+            className="flex items-center gap-3 rounded-xl border border-transparent p-2 text-left transition-colors hover:border-desk-accent/40 hover:bg-desk-hover"
           >
             <TemplateThumbnail type={tpl.id} />
             <div>
-              <p className="text-sm font-semibold text-slate-800">{tpl.label}</p>
-              <p className="text-xs text-slate-500">{tpl.description}</p>
+              <p className="text-sm font-semibold text-desk-heading">{tpl.label}</p>
+              <p className="text-xs text-desk-muted">{tpl.description}</p>
             </div>
           </button>
         ))}

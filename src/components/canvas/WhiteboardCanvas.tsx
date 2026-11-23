@@ -9,6 +9,7 @@ import {
   useState,
 } from 'react';
 import { FileUp } from 'lucide-react';
+import { useTheme, type ThemeMode } from '@/components/theme/ThemeProvider';
 import { FloatingToolbar } from './FloatingToolbar';
 import { SelectionActionBar } from './SelectionActionBar';
 import { ZoomControls } from './ZoomControls';
@@ -34,13 +35,17 @@ import { renderPdfFileToPages } from '@/lib/canvas/pdfRenderer';
 import {
   canvasToPngBlob,
   evictStrokeCache,
-  registerLocalSnipPreview,
+  registerLocalImagePreview,
   renderLiveCanvas,
   renderRegionToCanvas,
   renderSceneCanvas,
 } from '@/lib/canvas/renderer';
 import { isSupabaseConfigured } from '@/lib/supabase/client';
-import { uploadPdfAsset, uploadSnipAsset } from '@/lib/supabase/storage';
+import {
+  uploadPdfAsset,
+  uploadPhotoAsset,
+  uploadSnipAsset,
+} from '@/lib/supabase/storage';
 import { clamp, generateId } from '@/lib/utils';
 import {
   A4_HEIGHT,
@@ -57,6 +62,7 @@ import {
   type LiveStrokePayload,
   type PaperObject,
   type PaperTemplateType,
+  type PhotoObject,
   type SceneData,
   type SceneObject,
   type ScenePatchPayload,
@@ -152,6 +158,10 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
     },
     ref
   ) {
+    const { theme } = useTheme();
+    const themeRef = useRef<ThemeMode>(theme);
+    themeRef.current = theme;
+
     const containerRef = useRef<HTMLDivElement>(null);
     const sceneCanvasRef = useRef<HTMLCanvasElement>(null);
     const liveCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -211,8 +221,8 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
     const [viewportUiWidth, setViewportUiWidth] = useState(1200);
     const [selectedIdsUi, setSelectedIdsUi] = useState<string[]>([]);
     const [historyCounts, setHistoryCounts] = useState({ undo: 0, redo: 0 });
-    const [uploadingPdf, setUploadingPdf] = useState(false);
-    const [dragOverPdf, setDragOverPdf] = useState(false);
+    const [uploadingMedia, setUploadingMedia] = useState(false);
+    const [dragOverMedia, setDragOverMedia] = useState(false);
     const [toast, setToast] = useState<{ text: string; tone: 'info' | 'error' } | null>(
       null
     );
@@ -273,7 +283,8 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
               if (rafIdRef.current === null) {
                 rafIdRef.current = window.requestAnimationFrame(runRenderFrame);
               }
-            }
+            },
+            themeRef.current
           );
         }
         dirtySceneRef.current = false;
@@ -344,6 +355,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
 
           renderLiveCanvas(liveCtx, width, height, dpr, {
             camera: cameraRef.current,
+            theme: themeRef.current,
             activeStroke,
             remoteLiveStrokes: remoteLiveStrokesRef.current,
             activeShape,
@@ -369,6 +381,11 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
       },
       [runRenderFrame]
     );
+
+    useEffect(() => {
+      themeRef.current = theme;
+      scheduleRender(true, true);
+    }, [theme, scheduleRender]);
 
     const selectTool = useCallback(
       (tool: ToolType) => {
@@ -770,12 +787,12 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
           file.type !== 'application/pdf' &&
           !file.name.toLowerCase().endsWith('.pdf')
         ) {
-          showToast('Please choose a valid PDF file (.pdf).', 'error');
+          showToast('Please choose a valid PDF or image file.', 'error');
           return;
         }
 
-        setUploadingPdf(true);
-        showToast(`Uploading & rendering ${file.name}...`);
+        setUploadingMedia(true);
+        showToast(`Adding ${file.name}...`);
 
         try {
           let startX = 0;
@@ -845,7 +862,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
           }
 
           showToast(
-            `Placed ${pages.length} page${pages.length === 1 ? '' : 's'} from ${file.name}`
+            `Added ${pages.length} page${pages.length === 1 ? '' : 's'} from ${file.name}`
           );
         } catch (err) {
           showToast(
@@ -853,11 +870,211 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
             'error'
           );
         } finally {
-          setUploadingPdf(false);
+          setUploadingMedia(false);
         }
       },
       [boardId, commitHistoryPatch, scheduleRender, showToast, syncCameraUi]
     );
+
+    // Normalize image (inspect dimensions and ensure PNG/JPEG/WEBP)
+    const normalizeImageBlob = useCallback(
+      async (
+        rawBlob: Blob
+      ): Promise<{ blob: Blob; mimeType: string; width: number; height: number }> => {
+        const objectUrl = URL.createObjectURL(rawBlob);
+        try {
+          const img = await new Promise<HTMLImageElement>((resolve, reject) => {
+            const el = new Image();
+            el.onload = () => resolve(el);
+            el.onerror = () => reject(new Error('Could not decode image file.'));
+            el.src = objectUrl;
+          });
+          const width = Math.max(1, img.naturalWidth);
+          const height = Math.max(1, img.naturalHeight);
+          const supported = ['image/png', 'image/jpeg', 'image/webp'];
+          if (supported.includes(rawBlob.type.toLowerCase())) {
+            return { blob: rawBlob, mimeType: rawBlob.type.toLowerCase(), width, height };
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          if (!ctx) throw new Error('Could not process pasted image.');
+          ctx.drawImage(img, 0, 0);
+          const pngBlob = await canvasToPngBlob(canvas);
+          return { blob: pngBlob, mimeType: 'image/png', width, height };
+        } finally {
+          URL.revokeObjectURL(objectUrl);
+        }
+      },
+      []
+    );
+
+    // Upload & Place Photo or Pasted Screenshot
+    const handlePhotoFile = useCallback(
+      async (
+        fileOrBlob: Blob,
+        options?: { fileName?: string; dropClientCoords?: { clientX: number; clientY: number } }
+      ) => {
+        setUploadingMedia(true);
+        showToast('Adding photo to page...');
+
+        try {
+          const normalized = await normalizeImageBlob(fileOrBlob);
+          const fitScale = Math.min(
+            1,
+            680 / normalized.width,
+            780 / normalized.height
+          );
+          const displayW = Math.max(24, Math.round(normalized.width * fitScale));
+          const displayH = Math.max(24, Math.round(normalized.height * fitScale));
+
+          let centerWorld: { x: number; y: number };
+          if (options?.dropClientCoords && containerRef.current) {
+            const rect = containerRef.current.getBoundingClientRect();
+            centerWorld = screenToWorld(
+              options.dropClientCoords.clientX - rect.left,
+              options.dropClientCoords.clientY - rect.top,
+              cameraRef.current
+            );
+          } else {
+            centerWorld = screenToWorld(
+              viewportRef.current.width / 2,
+              viewportRef.current.height / 2,
+              cameraRef.current
+            );
+          }
+
+          const x = Math.round(centerWorld.x - displayW / 2);
+          const y = Math.round(centerWorld.y - displayH / 2);
+
+          const photoId = generateId();
+          const localPreviewUrl = URL.createObjectURL(normalized.blob);
+          let imageUrl = localPreviewUrl;
+          let storagePath = '';
+
+          if (isSupabaseConfigured()) {
+            const uploaded = await uploadPhotoAsset(
+              boardId,
+              normalized.blob,
+              photoId,
+              normalized.mimeType
+            );
+            imageUrl = uploaded.url;
+            storagePath = uploaded.storagePath;
+            registerLocalImagePreview(imageUrl, localPreviewUrl);
+          }
+
+          const now = Date.now();
+          const photoObj: PhotoObject = {
+            id: photoId,
+            type: 'photo',
+            imageUrl,
+            storagePath,
+            fileName: options?.fileName,
+            x,
+            y,
+            width: displayW,
+            height: displayH,
+            naturalWidth: normalized.width,
+            naturalHeight: normalized.height,
+            locked: false,
+            zIndex: getNextZIndex(objectsRef.current),
+            createdAt: now,
+            updatedAt: now,
+          };
+
+          commitHistoryPatch({
+            before: { [photoId]: null },
+            after: { [photoId]: photoObj },
+          });
+
+          showToast('Photo added to page');
+        } catch (err) {
+          showToast(
+            err instanceof Error ? err.message : 'Failed to add photo.',
+            'error'
+          );
+        } finally {
+          setUploadingMedia(false);
+        }
+      },
+      [boardId, commitHistoryPatch, normalizeImageBlob, showToast]
+    );
+
+    const handleMediaFiles = useCallback(
+      async (
+        files: FileList | File[],
+        dropClientCoords?: { clientX: number; clientY: number }
+      ) => {
+        const list = Array.from(files);
+        for (const file of list) {
+          const lower = file.name.toLowerCase();
+          if (file.type === 'application/pdf' || lower.endsWith('.pdf')) {
+            await handlePdfFile(file, dropClientCoords);
+          } else if (
+            file.type.startsWith('image/') ||
+            /\.(png|jpe?g|webp)$/i.test(lower)
+          ) {
+            await handlePhotoFile(file, {
+              fileName: file.name,
+              dropClientCoords,
+            });
+          } else {
+            showToast(
+              'Please choose a PDF or image file (PNG, JPG, WebP).',
+              'error'
+            );
+          }
+        }
+      },
+      [handlePdfFile, handlePhotoFile, showToast]
+    );
+
+    // Direct Screenshot / Photo Paste (Cmd/Ctrl + V)
+    useEffect(() => {
+      const handlePaste = (e: ClipboardEvent) => {
+        const active = document.activeElement;
+        if (
+          active instanceof HTMLElement &&
+          (active.tagName === 'INPUT' ||
+            active.tagName === 'TEXTAREA' ||
+            active.isContentEditable)
+        ) {
+          return;
+        }
+
+        const items = e.clipboardData?.items;
+        let imageFile: File | null = null;
+        if (items) {
+          for (let i = 0; i < items.length; i += 1) {
+            const item = items[i];
+            if (item.kind === 'file' && item.type.startsWith('image/')) {
+              imageFile = item.getAsFile();
+              if (imageFile) break;
+            }
+          }
+        }
+        if (!imageFile && e.clipboardData?.files) {
+          for (let i = 0; i < e.clipboardData.files.length; i += 1) {
+            const f = e.clipboardData.files[i];
+            if (f.type.startsWith('image/')) {
+              imageFile = f;
+              break;
+            }
+          }
+        }
+
+        if (!imageFile) return;
+        e.preventDefault();
+        void handlePhotoFile(imageFile, {
+          fileName: imageFile.name || 'Pasted Screenshot',
+        });
+      };
+
+      window.addEventListener('paste', handlePaste);
+      return () => window.removeEventListener('paste', handlePaste);
+    }, [handlePhotoFile]);
 
     // Visual Area Snip Completion
     const finalizeSnip = useCallback(
@@ -904,7 +1121,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
             const uploaded = await uploadSnipAsset(boardId, blob, snipId);
             imageUrl = uploaded.url;
             storagePath = uploaded.storagePath;
-            registerLocalSnipPreview(imageUrl, localPreviewUrl);
+            registerLocalImagePreview(imageUrl, localPreviewUrl);
           }
 
           const now = Date.now();
@@ -1588,7 +1805,9 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
         const keepRatio =
           e.shiftKey ||
           (originalsArr.length === 1 &&
-            (originalsArr[0].type === 'snip' || originalsArr[0].type === 'pdf-page'));
+            (originalsArr[0].type === 'snip' ||
+              originalsArr[0].type === 'pdf-page' ||
+              originalsArr[0].type === 'photo'));
 
         const nextBBox = applyHandleResize(
           interaction.initialBBox,
@@ -1840,19 +2059,21 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
         onDragOver={(e) => {
           if (e.dataTransfer.types.includes('Files')) {
             e.preventDefault();
-            setDragOverPdf(true);
+            setDragOverMedia(true);
           }
         }}
-        onDragLeave={() => setDragOverPdf(false)}
+        onDragLeave={() => setDragOverMedia(false)}
         onDrop={(e) => {
           e.preventDefault();
-          setDragOverPdf(false);
-          const file = e.dataTransfer.files?.[0];
-          if (file) {
-            void handlePdfFile(file, { clientX: e.clientX, clientY: e.clientY });
+          setDragOverMedia(false);
+          if (e.dataTransfer.files?.length) {
+            void handleMediaFiles(e.dataTransfer.files, {
+              clientX: e.clientX,
+              clientY: e.clientY,
+            });
           }
         }}
-        className="relative h-full w-full flex-1 select-none overflow-hidden bg-[#eef2f7]"
+        className="relative h-full w-full flex-1 select-none overflow-hidden bg-desk-canvas"
         style={{ touchAction: 'none' }}
       >
         {/* Static/Committed Scene Canvas */}
@@ -1878,25 +2099,26 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
           style={{ cursor: cursorCss, touchAction: 'none' }}
         />
 
-        {/* Hidden PDF File Picker */}
+        {/* Hidden PDF / Photo File Picker */}
         <input
           ref={fileInputRef}
           type="file"
-          accept="application/pdf,.pdf"
+          multiple
+          accept="application/pdf,.pdf,image/png,image/jpeg,image/webp,.png,.jpg,.jpeg,.webp"
           className="hidden"
           onChange={(e) => {
-            const file = e.target.files?.[0];
+            const files = e.target.files ? Array.from(e.target.files) : [];
             e.target.value = '';
-            if (file) void handlePdfFile(file);
+            if (files.length > 0) void handleMediaFiles(files);
           }}
         />
 
-        {/* Drag & Drop PDF Overlay */}
-        {dragOverPdf && (
-          <div className="pointer-events-none absolute inset-4 z-40 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-indigo-500 bg-indigo-50/80 backdrop-blur-sm">
-            <FileUp className="h-10 w-10 text-indigo-600" />
-            <p className="mt-2 text-base font-semibold text-indigo-900">
-              Drop PDF to place pages onto whiteboard
+        {/* Drag & Drop PDF / Photo Overlay */}
+        {dragOverMedia && (
+          <div className="pointer-events-none absolute inset-4 z-40 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed border-desk-accent bg-desk-surface/90 text-desk-heading backdrop-blur-sm">
+            <FileUp className="h-10 w-10 text-desk-accent" />
+            <p className="mt-2 text-base font-semibold">
+              Drop a PDF or photo onto the page
             </p>
           </div>
         )}
@@ -1907,8 +2129,8 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
             role="status"
             className={`pointer-events-none absolute left-1/2 top-4 z-40 -translate-x-1/2 rounded-xl border px-4 py-2 text-xs font-semibold shadow-lg backdrop-blur-md ${
               toast.tone === 'error'
-                ? 'border-rose-200 bg-rose-50/95 text-rose-700'
-                : 'border-slate-200 bg-white/95 text-slate-800'
+                ? 'border-rose-300 bg-rose-50/95 text-rose-700 dark:border-rose-500/40 dark:bg-rose-950/90 dark:text-rose-200'
+                : 'border-desk-border bg-desk-surface/95 text-desk-heading'
             }`}
           >
             {toast.text}
@@ -1939,7 +2161,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
           snipMode={snipMode}
           canUndo={historyCounts.undo > 0}
           canRedo={historyCounts.redo > 0}
-          uploadingPdf={uploadingPdf}
+          uploadingMedia={uploadingMedia}
           onSelectTool={selectTool}
           onPenColorChange={(c) => {
             penColorRef.current = c;
@@ -1962,7 +2184,7 @@ export const WhiteboardCanvas = forwardRef<WhiteboardCanvasHandle, WhiteboardCan
             setSnipMode(m);
           }}
           onAddPaper={handleAddPaper}
-          onTriggerPdfUpload={() => fileInputRef.current?.click()}
+          onTriggerMediaUpload={() => fileInputRef.current?.click()}
           onUndo={undo}
           onRedo={redo}
         />

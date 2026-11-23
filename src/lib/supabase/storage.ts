@@ -68,6 +68,48 @@ export async function uploadSnipAsset(
   };
 }
 
+function extensionForMimeType(mimeType: string): string {
+  const normalized = mimeType.toLowerCase();
+  if (normalized === 'image/jpeg' || normalized === 'image/jpg') return 'jpg';
+  if (normalized === 'image/webp') return 'webp';
+  return 'png';
+}
+
+export async function uploadPhotoAsset(
+  boardId: string,
+  blob: Blob,
+  photoId: string,
+  mimeType: string
+): Promise<UploadedAsset> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error('Supabase is not configured. Cannot upload photo.');
+  }
+
+  const ext = extensionForMimeType(mimeType);
+  const contentType =
+    ext === 'jpg' ? 'image/jpeg' : ext === 'webp' ? 'image/webp' : 'image/png';
+  const storagePath = `photos/${boardId}/${photoId}.${ext}`;
+
+  const { error } = await supabase.storage
+    .from(STORAGE_BUCKET)
+    .upload(storagePath, blob, {
+      contentType,
+      cacheControl: '31536000',
+      upsert: true,
+    });
+
+  if (error) {
+    throw new Error(`Photo upload failed: ${error.message}`);
+  }
+
+  const { data } = supabase.storage.from(STORAGE_BUCKET).getPublicUrl(storagePath);
+  return {
+    url: data.publicUrl,
+    storagePath,
+  };
+}
+
 export async function deleteBoardStorageAssets(
   boardId: string,
   sceneData?: SceneData
@@ -79,13 +121,16 @@ export async function deleteBoardStorageAssets(
 
   if (sceneData) {
     for (const obj of Object.values(sceneData.objects)) {
-      if ((obj.type === 'pdf-page' || obj.type === 'snip') && obj.storagePath) {
+      if (
+        (obj.type === 'pdf-page' || obj.type === 'snip' || obj.type === 'photo') &&
+        obj.storagePath
+      ) {
         paths.add(obj.storagePath);
       }
     }
   }
 
-  for (const prefix of [`pdfs/${boardId}`, `snips/${boardId}`]) {
+  for (const prefix of [`pdfs/${boardId}`, `snips/${boardId}`, `photos/${boardId}`]) {
     const { data, error } = await supabase.storage
       .from(STORAGE_BUCKET)
       .list(prefix, { limit: 1000 });

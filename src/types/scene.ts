@@ -77,6 +77,19 @@ export interface SnipObject extends BaseSceneObject {
   naturalHeight: number;
 }
 
+export interface PhotoObject extends BaseSceneObject {
+  type: 'photo';
+  imageUrl: string;
+  storagePath: string;
+  fileName?: string;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  naturalWidth: number;
+  naturalHeight: number;
+}
+
 export interface ShapeObject extends BaseSceneObject {
   type: 'shape';
   shape: ShapeKind;
@@ -93,6 +106,7 @@ export type SceneObject =
   | PaperObject
   | PdfPageObject
   | SnipObject
+  | PhotoObject
   | ShapeObject;
 
 export interface SceneData {

@@ -1,4 +1,5 @@
 import getStroke from 'perfect-freehand';
+import type { ThemeMode } from '@/components/theme/ThemeProvider';
 import {
   getObjectBBox,
   getResizeHandles,
@@ -15,6 +16,7 @@ import type {
   LiveStrokePayload,
   PaperObject,
   PdfPageObject,
+  PhotoObject,
   SceneObject,
   ShapeObject,
   SnipMode,
@@ -24,14 +26,16 @@ import type {
 } from '@/types/scene';
 
 const strokePathCache = new Map<string, { sig: string; path: Path2D }>();
-const snipImageCache = new Map<string, HTMLImageElement>();
+const imageElementCache = new Map<string, HTMLImageElement>();
 const localPreviewUrlByKey = new Map<string, string>();
-const loadingSnipKeys = new Set<string>();
+const loadingImageKeys = new Set<string>();
 
-export function registerLocalSnipPreview(imageUrl: string, blobUrl: string): void {
+export function registerLocalImagePreview(imageUrl: string, blobUrl: string): void {
   localPreviewUrlByKey.set(imageUrl, blobUrl);
-  snipImageCache.delete(imageUrl);
+  imageElementCache.delete(imageUrl);
 }
+
+export const registerLocalSnipPreview = registerLocalImagePreview;
 
 export function evictStrokeCache(strokeId: string): void {
   strokePathCache.delete(strokeId);
@@ -132,10 +136,11 @@ export function drawPaperObject(
 ): void {
   const { x, y, width, height, template } = paper;
 
+  // Paper Contrast Rule: always crisp white #FFFFFF with dark markings in both themes
   ctx.save();
   if (!isExport) {
-    ctx.shadowColor = 'rgba(15, 23, 42, 0.10)';
-    ctx.shadowBlur = 20;
+    ctx.shadowColor = 'rgba(15, 23, 42, 0.14)';
+    ctx.shadowBlur = 22;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 6;
   }
@@ -227,7 +232,7 @@ export function drawPdfPageObject(
 
   ctx.save();
   if (!isExport) {
-    ctx.shadowColor = 'rgba(15, 23, 42, 0.12)';
+    ctx.shadowColor = 'rgba(15, 23, 42, 0.16)';
     ctx.shadowBlur = 22;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 7;
@@ -269,49 +274,49 @@ export function drawPdfPageObject(
   ctx.restore();
 }
 
-function getOrLoadSnipImage(
+function getOrLoadImage(
   imageUrl: string,
   onReady?: () => void
 ): HTMLImageElement | null {
-  const cached = snipImageCache.get(imageUrl);
+  const cached = imageElementCache.get(imageUrl);
   if (cached) {
     return cached.complete && cached.naturalWidth > 0 ? cached : null;
   }
 
-  if (loadingSnipKeys.has(imageUrl)) {
+  if (loadingImageKeys.has(imageUrl)) {
     return null;
   }
 
   const effectiveSrc = localPreviewUrlByKey.get(imageUrl) ?? imageUrl;
   const img = new Image();
   img.crossOrigin = 'anonymous';
-  loadingSnipKeys.add(imageUrl);
+  loadingImageKeys.add(imageUrl);
 
   img.onload = () => {
-    loadingSnipKeys.delete(imageUrl);
-    snipImageCache.set(imageUrl, img);
+    loadingImageKeys.delete(imageUrl);
+    imageElementCache.set(imageUrl, img);
     onReady?.();
   };
   img.onerror = () => {
-    loadingSnipKeys.delete(imageUrl);
+    loadingImageKeys.delete(imageUrl);
   };
   img.src = effectiveSrc;
   return null;
 }
 
-export function drawSnipObject(
+export function drawImageObject(
   ctx: CanvasRenderingContext2D,
-  snip: SnipObject,
+  item: SnipObject | PhotoObject,
   onImageReady?: () => void,
   isExport = false
 ): void {
-  const { x, y, width, height } = snip;
-  const img = getOrLoadSnipImage(snip.imageUrl, onImageReady);
+  const { x, y, width, height } = item;
+  const img = getOrLoadImage(item.imageUrl, onImageReady);
 
   ctx.save();
   if (!isExport) {
-    ctx.shadowColor = 'rgba(15, 23, 42, 0.14)';
-    ctx.shadowBlur = 14;
+    ctx.shadowColor = 'rgba(15, 23, 42, 0.16)';
+    ctx.shadowBlur = 16;
     ctx.shadowOffsetX = 0;
     ctx.shadowOffsetY = 4;
   }
@@ -327,22 +332,28 @@ export function drawSnipObject(
     ctx.restore();
   } else {
     ctx.save();
-    ctx.fillStyle = '#f1f5f9';
+    ctx.fillStyle = '#f8fafc';
     ctx.fillRect(x, y, width, height);
     ctx.fillStyle = '#64748b';
     ctx.font = '500 13px system-ui, -apple-system, sans-serif';
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
-    ctx.fillText('Loading snip...', x + width / 2, y + height / 2);
+    ctx.fillText(
+      item.type === 'photo' ? 'Loading photo...' : 'Loading snip...',
+      x + width / 2,
+      y + height / 2
+    );
     ctx.restore();
   }
 
   ctx.save();
-  ctx.strokeStyle = 'rgba(148, 163, 184, 0.6)';
+  ctx.strokeStyle = 'rgba(148, 163, 184, 0.55)';
   ctx.lineWidth = 1;
   ctx.strokeRect(x, y, width, height);
   ctx.restore();
 }
+
+export const drawSnipObject = drawImageObject;
 
 export function drawShapeObject(
   ctx: CanvasRenderingContext2D,
@@ -436,7 +447,8 @@ function drawInfiniteDotGrid(
   ctx: CanvasRenderingContext2D,
   width: number,
   height: number,
-  camera: Camera
+  camera: Camera,
+  theme: ThemeMode
 ): void {
   let worldStep = 32;
   while (worldStep * camera.zoom < 18) {
@@ -455,7 +467,10 @@ function drawInfiniteDotGrid(
   const endY = Math.ceil(bottomRight.y / worldStep) * worldStep;
 
   ctx.save();
-  ctx.fillStyle = 'rgba(148, 163, 184, 0.38)';
+  ctx.fillStyle =
+    theme === 'dark'
+      ? 'rgba(125, 211, 252, 0.16)'
+      : 'rgba(219, 39, 119, 0.20)';
   const radius = Math.max(0.85, Math.min(1.4, 1.15 / camera.zoom));
 
   for (let wx = startX; wx <= endX; wx += worldStep) {
@@ -470,7 +485,8 @@ function drawSheetHeaderPill(
   ctx: CanvasRenderingContext2D,
   sheet: PaperObject | PdfPageObject,
   camera: Camera,
-  isSelected: boolean
+  isSelected: boolean,
+  theme: ThemeMode
 ): void {
   const pill = getSheetHeaderPillRect(sheet, camera.zoom);
   const w = pill.maxX - pill.minX;
@@ -482,10 +498,17 @@ function drawSheetHeaderPill(
       : `${sheet.label ?? 'Paper'}${sheet.locked ? ' · Locked' : ''}`;
 
   ctx.save();
-  ctx.fillStyle = isSelected
-    ? 'rgba(79, 70, 229, 0.92)'
-    : 'rgba(255, 255, 255, 0.90)';
-  ctx.strokeStyle = isSelected ? '#4f46e5' : 'rgba(203, 213, 225, 0.9)';
+  if (theme === 'dark') {
+    ctx.fillStyle = isSelected
+      ? 'rgba(125, 211, 252, 0.95)'
+      : 'rgba(19, 26, 42, 0.94)';
+    ctx.strokeStyle = isSelected ? '#7DD3FC' : '#324160';
+  } else {
+    ctx.fillStyle = isSelected
+      ? 'rgba(30, 58, 138, 0.94)'
+      : 'rgba(255, 255, 255, 0.94)';
+    ctx.strokeStyle = isSelected ? '#1E3A8A' : '#F3D5E5';
+  }
   ctx.lineWidth = invZoom;
 
   const r = 6 * invZoom;
@@ -494,7 +517,14 @@ function drawSheetHeaderPill(
   ctx.fill();
   ctx.stroke();
 
-  ctx.fillStyle = isSelected ? '#ffffff' : '#475569';
+  ctx.fillStyle =
+    theme === 'dark'
+      ? isSelected
+        ? '#0B0F19'
+        : '#7DD3FC'
+      : isSelected
+        ? '#FFFFFF'
+        : '#1E3A8A';
   ctx.font = `600 ${11 * invZoom}px system-ui, -apple-system, sans-serif`;
   ctx.textBaseline = 'middle';
   ctx.textAlign = 'left';
@@ -510,17 +540,18 @@ export function renderSceneCanvas(
   camera: Camera,
   objects: Record<string, SceneObject>,
   selectedIds: Set<string>,
-  onAssetReady: () => void
+  onAssetReady: () => void,
+  theme: ThemeMode = 'light'
 ): void {
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-  ctx.fillStyle = '#eef2f7';
+  ctx.fillStyle = theme === 'dark' ? '#0B0F19' : '#FDF2F8';
   ctx.fillRect(0, 0, width, height);
 
   ctx.save();
   ctx.translate(camera.x, camera.y);
   ctx.scale(camera.zoom, camera.zoom);
 
-  drawInfiniteDotGrid(ctx, width, height, camera);
+  drawInfiniteDotGrid(ctx, width, height, camera, theme);
 
   const tl = screenToWorld(0, 0, camera);
   const br = screenToWorld(width, height, camera);
@@ -538,14 +569,15 @@ export function renderSceneCanvas(
     switch (obj.type) {
       case 'paper':
         drawPaperObject(ctx, obj, false);
-        drawSheetHeaderPill(ctx, obj, camera, selectedIds.has(obj.id));
+        drawSheetHeaderPill(ctx, obj, camera, selectedIds.has(obj.id), theme);
         break;
       case 'pdf-page':
         drawPdfPageObject(ctx, obj, onAssetReady, false);
-        drawSheetHeaderPill(ctx, obj, camera, selectedIds.has(obj.id));
+        drawSheetHeaderPill(ctx, obj, camera, selectedIds.has(obj.id), theme);
         break;
       case 'snip':
-        drawSnipObject(ctx, obj, onAssetReady, false);
+      case 'photo':
+        drawImageObject(ctx, obj, onAssetReady, false);
         break;
       case 'shape':
         drawShapeObject(ctx, obj);
@@ -561,6 +593,7 @@ export function renderSceneCanvas(
 
 export interface LiveOverlayState {
   camera: Camera;
+  theme: ThemeMode;
   activeStroke: StrokeObject | null;
   remoteLiveStrokes: Map<string, LiveStrokePayload>;
   activeShape: Omit<ShapeObject, 'id' | 'zIndex' | 'createdAt' | 'updatedAt'> | null;
@@ -583,7 +616,10 @@ export function renderLiveCanvas(
   dpr: number,
   state: LiveOverlayState
 ): void {
-  const { camera } = state;
+  const { camera, theme } = state;
+  const primaryColor = theme === 'dark' ? '#7DD3FC' : '#1E3A8A';
+  const accentColor = theme === 'dark' ? '#F9A8D4' : '#EC4899';
+
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   ctx.clearRect(0, 0, width, height);
 
@@ -626,8 +662,11 @@ export function renderLiveCanvas(
   if (state.marqueeBBox) {
     const { minX, minY, maxX, maxY } = state.marqueeBBox;
     ctx.save();
-    ctx.fillStyle = 'rgba(79, 70, 229, 0.08)';
-    ctx.strokeStyle = '#4f46e5';
+    ctx.fillStyle =
+      theme === 'dark'
+        ? 'rgba(125, 211, 252, 0.10)'
+        : 'rgba(236, 72, 153, 0.08)';
+    ctx.strokeStyle = theme === 'dark' ? primaryColor : accentColor;
     ctx.lineWidth = 1.5 * invZoom;
     ctx.setLineDash([5 * invZoom, 4 * invZoom]);
     ctx.fillRect(minX, minY, maxX - minX, maxY - minY);
@@ -639,14 +678,14 @@ export function renderLiveCanvas(
   if (state.selectionBBox) {
     const { minX, minY, maxX, maxY } = state.selectionBBox;
     ctx.save();
-    ctx.strokeStyle = '#4f46e5';
+    ctx.strokeStyle = primaryColor;
     ctx.lineWidth = 1.5 * invZoom;
     ctx.strokeRect(minX, minY, maxX - minX, maxY - minY);
 
     const handleSize = 8 * invZoom;
     for (const h of getResizeHandles(state.selectionBBox)) {
-      ctx.fillStyle = '#ffffff';
-      ctx.strokeStyle = '#4f46e5';
+      ctx.fillStyle = theme === 'dark' ? '#131A2A' : '#FFFFFF';
+      ctx.strokeStyle = primaryColor;
       ctx.lineWidth = 1.5 * invZoom;
       ctx.fillRect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
       ctx.strokeRect(h.x - handleSize / 2, h.y - handleSize / 2, handleSize, handleSize);
@@ -665,25 +704,31 @@ export function renderLiveCanvas(
       0,
       Math.PI * 2
     );
-    ctx.fillStyle = 'rgba(244, 63, 94, 0.14)';
-    ctx.strokeStyle = '#e11d48';
+    ctx.fillStyle =
+      theme === 'dark'
+        ? 'rgba(249, 168, 212, 0.16)'
+        : 'rgba(236, 72, 153, 0.14)';
+    ctx.strokeStyle = accentColor;
     ctx.lineWidth = 1.5 * invZoom;
     ctx.fill();
     ctx.stroke();
     ctx.restore();
   }
 
-  // 7. Visual Area Snip overlay (dim surrounding area + highlight cut)
+  // 7. Visual Area Snip overlay
   if (state.snipSelection) {
     const { mode, rect, lassoPoints } = state.snipSelection;
     if (mode === 'rect' && rect) {
       const w = rect.maxX - rect.minX;
       const h = rect.maxY - rect.minY;
       ctx.save();
-      ctx.strokeStyle = '#0ea5e9';
+      ctx.strokeStyle = accentColor;
       ctx.lineWidth = 2 * invZoom;
       ctx.setLineDash([6 * invZoom, 4 * invZoom]);
-      ctx.fillStyle = 'rgba(14, 165, 233, 0.10)';
+      ctx.fillStyle =
+        theme === 'dark'
+          ? 'rgba(249, 168, 212, 0.12)'
+          : 'rgba(236, 72, 153, 0.10)';
       ctx.fillRect(rect.minX, rect.minY, w, h);
       ctx.strokeRect(rect.minX, rect.minY, w, h);
       ctx.setLineDash([]);
@@ -696,11 +741,11 @@ export function renderLiveCanvas(
       const pillH = 22 * invZoom;
       const pillX = rect.minX;
       const pillY = rect.maxY + 8 * invZoom;
-      ctx.fillStyle = 'rgba(15, 23, 42, 0.85)';
+      ctx.fillStyle = theme === 'dark' ? '#131A2A' : '#1E3A8A';
       ctx.beginPath();
       ctx.roundRect(pillX, pillY, pillW, pillH, 6 * invZoom);
       ctx.fill();
-      ctx.fillStyle = '#ffffff';
+      ctx.fillStyle = theme === 'dark' ? '#7DD3FC' : '#FFFFFF';
       ctx.textBaseline = 'middle';
       ctx.fillText(label, pillX + 7 * invZoom, pillY + pillH / 2);
       ctx.restore();
@@ -712,8 +757,11 @@ export function renderLiveCanvas(
         ctx.lineTo(lassoPoints[i][0], lassoPoints[i][1]);
       }
       ctx.closePath();
-      ctx.fillStyle = 'rgba(14, 165, 233, 0.12)';
-      ctx.strokeStyle = '#0ea5e9';
+      ctx.fillStyle =
+        theme === 'dark'
+          ? 'rgba(249, 168, 212, 0.12)'
+          : 'rgba(236, 72, 153, 0.10)';
+      ctx.strokeStyle = accentColor;
       ctx.lineWidth = 2 * invZoom;
       ctx.setLineDash([6 * invZoom, 4 * invZoom]);
       ctx.fill();
@@ -730,7 +778,6 @@ export function renderLiveCanvas(
     ctx.translate(cursor.x, cursor.y);
     ctx.scale(invZoom, invZoom);
 
-    // Pointer triangle
     ctx.beginPath();
     ctx.moveTo(0, 0);
     ctx.lineTo(0, 16);
@@ -743,7 +790,6 @@ export function renderLiveCanvas(
     ctx.fill();
     ctx.stroke();
 
-    // Small status dot/tag
     ctx.fillStyle = cursor.color;
     ctx.beginPath();
     ctx.roundRect(10, 13, 48, 18, 6);
@@ -823,7 +869,8 @@ export function renderRegionToCanvas(
         drawPdfPageObject(ctx, obj, undefined, true);
         break;
       case 'snip':
-        drawSnipObject(ctx, obj, undefined, true);
+      case 'photo':
+        drawImageObject(ctx, obj, undefined, true);
         break;
       case 'shape':
         drawShapeObject(ctx, obj);

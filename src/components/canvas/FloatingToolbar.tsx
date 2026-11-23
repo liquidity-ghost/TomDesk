@@ -6,8 +6,8 @@ import {
   Circle,
   Eraser,
   FilePlus2,
-  FileUp,
   Highlighter,
+  ImagePlus,
   Lasso,
   Minus,
   MousePointer2,
@@ -40,7 +40,7 @@ interface FloatingToolbarProps {
   snipMode: SnipMode;
   canUndo: boolean;
   canRedo: boolean;
-  uploadingPdf: boolean;
+  uploadingMedia: boolean;
   onSelectTool: (tool: ToolType) => void;
   onPenColorChange: (color: string) => void;
   onPenSizeChange: (size: number) => void;
@@ -48,7 +48,7 @@ interface FloatingToolbarProps {
   onHighlighterSizeChange: (size: number) => void;
   onSnipModeChange: (mode: SnipMode) => void;
   onAddPaper: (template: PaperTemplateType) => void;
-  onTriggerPdfUpload: () => void;
+  onTriggerMediaUpload: () => void;
   onUndo: () => void;
   onRedo: () => void;
 }
@@ -70,7 +70,7 @@ export function FloatingToolbar({
   snipMode,
   canUndo,
   canRedo,
-  uploadingPdf,
+  uploadingMedia,
   onSelectTool,
   onPenColorChange,
   onPenSizeChange,
@@ -78,7 +78,7 @@ export function FloatingToolbar({
   onHighlighterSizeChange,
   onSnipModeChange,
   onAddPaper,
-  onTriggerPdfUpload,
+  onTriggerMediaUpload,
   onUndo,
   onRedo,
 }: FloatingToolbarProps) {
@@ -116,7 +116,7 @@ export function FloatingToolbar({
         activeTool === 'highlighter' ||
         isShapeActive ||
         activeTool === 'snip') && (
-        <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-2xl border border-slate-200/90 bg-white/95 px-3 py-2 shadow-lg backdrop-blur-md">
+        <div className="pointer-events-auto flex flex-wrap items-center gap-2 rounded-2xl border border-desk-border bg-desk-surface/95 px-3 py-2 shadow-lg backdrop-blur-md">
           {(activeTool === 'pen' || isShapeActive) && (
             <>
               {isShapeActive && (
@@ -131,15 +131,15 @@ export function FloatingToolbar({
                         className={cn(
                           'rounded-lg p-1.5 transition-colors',
                           activeTool === id
-                            ? 'bg-indigo-600 text-white'
-                            : 'text-slate-600 hover:bg-slate-100'
+                            ? 'bg-desk-primary text-desk-primary-fg'
+                            : 'text-desk-muted hover:bg-desk-hover hover:text-desk-heading'
                         )}
                       >
                         <Icon className="h-4 w-4" />
                       </button>
                     ))}
                   </div>
-                  <div className="h-5 w-px bg-slate-200" />
+                  <div className="h-5 w-px bg-desk-border" />
                 </>
               )}
 
@@ -154,15 +154,15 @@ export function FloatingToolbar({
                     className={cn(
                       'h-6 w-6 rounded-full border-2 transition-transform hover:scale-110',
                       penColor === preset.value
-                        ? 'scale-110 border-indigo-500 ring-2 ring-indigo-500/25'
-                        : 'border-white shadow-sm'
+                        ? 'scale-110 border-desk-primary ring-2 ring-desk-primary/30'
+                        : 'border-desk-border-strong shadow-sm'
                     )}
                     style={{ backgroundColor: preset.value }}
                   />
                 ))}
               </div>
 
-              <div className="h-5 w-px bg-slate-200" />
+              <div className="h-5 w-px bg-desk-border" />
 
               <div className="flex items-center gap-1">
                 {PEN_SIZES.map((size) => (
@@ -175,12 +175,12 @@ export function FloatingToolbar({
                     className={cn(
                       'flex h-7 w-7 items-center justify-center rounded-lg transition-colors',
                       penSize === size
-                        ? 'bg-indigo-50 ring-1 ring-indigo-300'
-                        : 'hover:bg-slate-100'
+                        ? 'bg-desk-accent-soft ring-1 ring-desk-accent/60'
+                        : 'hover:bg-desk-hover'
                     )}
                   >
                     <span
-                      className="rounded-full"
+                      className="rounded-full ring-1 ring-white/25"
                       style={{
                         width: Math.max(4, Math.min(16, size * 1.35)),
                         height: Math.max(4, Math.min(16, size * 1.35)),
@@ -191,7 +191,7 @@ export function FloatingToolbar({
                 ))}
               </div>
               {isShapeActive && (
-                <span className="hidden pl-1 text-[11px] font-medium text-slate-400 sm:inline">
+                <span className="hidden pl-1 text-[11px] font-medium text-desk-muted sm:inline">
                   Hold Shift to snap
                 </span>
               )}
@@ -211,14 +211,14 @@ export function FloatingToolbar({
                     className={cn(
                       'h-6 w-6 rounded-full border-2 transition-transform hover:scale-110',
                       highlighterColor === preset.value
-                        ? 'scale-110 border-indigo-500 ring-2 ring-indigo-500/25'
-                        : 'border-white shadow-sm'
+                        ? 'scale-110 border-desk-primary ring-2 ring-desk-primary/30'
+                        : 'border-desk-border-strong shadow-sm'
                     )}
                     style={{ backgroundColor: preset.value }}
                   />
                 ))}
               </div>
-              <div className="h-5 w-px bg-slate-200" />
+              <div className="h-5 w-px bg-desk-border" />
               <div className="flex items-center gap-1">
                 {HIGHLIGHTER_SIZES.map((size) => (
                   <button
@@ -229,12 +229,12 @@ export function FloatingToolbar({
                     className={cn(
                       'flex h-7 w-8 items-center justify-center rounded-lg transition-colors',
                       highlighterSize === size
-                        ? 'bg-indigo-50 ring-1 ring-indigo-300'
-                        : 'hover:bg-slate-100'
+                        ? 'bg-desk-accent-soft ring-1 ring-desk-accent/60'
+                        : 'hover:bg-desk-hover'
                     )}
                   >
                     <span
-                      className="rounded-sm opacity-75"
+                      className="rounded-sm opacity-80"
                       style={{
                         width: 16,
                         height: Math.round(size * 0.45),
@@ -255,8 +255,8 @@ export function FloatingToolbar({
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors',
                   snipMode === 'rect'
-                    ? 'bg-sky-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-desk-accent text-desk-accent-fg'
+                    : 'text-desk-muted hover:bg-desk-hover hover:text-desk-heading'
                 )}
               >
                 <Square className="h-3.5 w-3.5" />
@@ -268,15 +268,15 @@ export function FloatingToolbar({
                 className={cn(
                   'inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1 text-xs font-semibold transition-colors',
                   snipMode === 'lasso'
-                    ? 'bg-sky-600 text-white'
-                    : 'text-slate-600 hover:bg-slate-100'
+                    ? 'bg-desk-accent text-desk-accent-fg'
+                    : 'text-desk-muted hover:bg-desk-hover hover:text-desk-heading'
                 )}
               >
                 <Lasso className="h-3.5 w-3.5" />
                 Freehand Lasso
               </button>
-              <span className="hidden pl-1 text-xs text-slate-400 sm:inline">
-                Drag around PDF + ink to snip &amp; copy
+              <span className="hidden pl-1 text-xs text-desk-muted sm:inline">
+                Drag over part of a page to snip &amp; copy
               </span>
             </div>
           )}
@@ -284,10 +284,10 @@ export function FloatingToolbar({
       )}
 
       {/* Main Floating Dock */}
-      <div className="pointer-events-auto relative flex items-center gap-1 rounded-2xl border border-slate-200/90 bg-white/95 p-1.5 shadow-xl shadow-slate-900/10 backdrop-blur-md">
+      <div className="pointer-events-auto relative flex items-center gap-1 rounded-2xl border border-desk-border bg-desk-surface/95 p-1.5 shadow-xl backdrop-blur-md">
         <ToolButton
           active={activeTool === 'select'}
-          label="Select / Transform"
+          label="Select / Move"
           shortcut="V"
           onClick={() => onSelectTool('select')}
           icon={<MousePointer2 className="h-4 w-4" />}
@@ -308,7 +308,7 @@ export function FloatingToolbar({
         />
         <ToolButton
           active={activeTool === 'eraser'}
-          label="Stroke Eraser"
+          label="Eraser"
           shortcut="E"
           onClick={() => onSelectTool('eraser')}
           icon={<Eraser className="h-4 w-4" />}
@@ -322,16 +322,16 @@ export function FloatingToolbar({
         />
         <ToolButton
           active={activeTool === 'snip'}
-          label="Visual Area Snip"
+          label="Snip"
           shortcut="S"
-          accentClass="bg-sky-600 text-white shadow-sm"
+          accentClass="bg-desk-accent text-desk-accent-fg shadow-sm"
           onClick={() => onSelectTool('snip')}
           icon={<Scissors className="h-4 w-4" />}
         />
 
-        <div className="mx-1 h-6 w-px bg-slate-200" />
+        <div className="mx-1 h-6 w-px bg-desk-border" />
 
-        {/* + Add Paper Dropdown */}
+        {/* Add Paper Dropdown */}
         <div ref={paperPopoverRef} className="relative">
           {paperMenuOpen && (
             <div className="absolute bottom-full left-1/2 mb-3 -translate-x-1/2">
@@ -347,30 +347,30 @@ export function FloatingToolbar({
             className={cn(
               'inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold transition-colors',
               paperMenuOpen
-                ? 'bg-indigo-50 text-indigo-700'
-                : 'text-slate-700 hover:bg-slate-100'
+                ? 'bg-desk-accent-soft text-desk-heading'
+                : 'text-desk-heading hover:bg-desk-hover'
             )}
           >
-            <FilePlus2 className="h-4 w-4 text-indigo-600" />
-            <span className="hidden sm:inline">+ Add Paper</span>
+            <FilePlus2 className="h-4 w-4 text-desk-accent" />
+            <span className="hidden sm:inline">Add Paper</span>
           </button>
         </div>
 
-        {/* Upload PDF */}
+        {/* Add PDF / Photo */}
         <button
           type="button"
-          onClick={onTriggerPdfUpload}
-          disabled={uploadingPdf}
-          title="Upload PDF (or drag & drop PDF onto canvas)"
-          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-slate-700 transition-colors hover:bg-slate-100 disabled:opacity-50"
+          onClick={onTriggerMediaUpload}
+          disabled={uploadingMedia}
+          title="Add PDF or Photo (or drag & drop / Cmd+V to paste)"
+          className="inline-flex items-center gap-1.5 rounded-xl px-3 py-2 text-xs font-semibold text-desk-heading transition-colors hover:bg-desk-hover disabled:opacity-50"
         >
-          <FileUp className="h-4 w-4 text-rose-600" />
+          <ImagePlus className="h-4 w-4 text-desk-accent" />
           <span className="hidden sm:inline">
-            {uploadingPdf ? 'Loading PDF...' : 'PDF'}
+            {uploadingMedia ? 'Adding...' : 'Add PDF / Photo'}
           </span>
         </button>
 
-        <div className="mx-1 h-6 w-px bg-slate-200" />
+        <div className="mx-1 h-6 w-px bg-desk-border" />
 
         {/* Undo / Redo */}
         <button
@@ -379,7 +379,7 @@ export function FloatingToolbar({
           disabled={!canUndo}
           title="Undo (Cmd/Ctrl + Z)"
           aria-label="Undo"
-          className="rounded-xl p-2 text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-35"
+          className="rounded-xl p-2 text-desk-muted transition-colors hover:bg-desk-hover hover:text-desk-heading disabled:cursor-not-allowed disabled:opacity-35"
         >
           <Undo2 className="h-4 w-4" />
         </button>
@@ -389,7 +389,7 @@ export function FloatingToolbar({
           disabled={!canRedo}
           title="Redo (Cmd/Ctrl + Shift + Z)"
           aria-label="Redo"
-          className="rounded-xl p-2 text-slate-700 transition-colors hover:bg-slate-100 disabled:cursor-not-allowed disabled:opacity-35"
+          className="rounded-xl p-2 text-desk-muted transition-colors hover:bg-desk-hover hover:text-desk-heading disabled:cursor-not-allowed disabled:opacity-35"
         >
           <Redo2 className="h-4 w-4" />
         </button>
@@ -412,7 +412,7 @@ function ToolButton({
   label,
   shortcut,
   icon,
-  accentClass = 'bg-indigo-600 text-white shadow-sm',
+  accentClass = 'bg-desk-primary text-desk-primary-fg shadow-sm',
   onClick,
 }: ToolButtonProps) {
   return (
@@ -426,14 +426,14 @@ function ToolButton({
         'relative flex h-9 w-9 items-center justify-center rounded-xl transition-all sm:w-10',
         active
           ? accentClass
-          : 'text-slate-600 hover:bg-slate-100 hover:text-slate-900'
+          : 'text-desk-muted hover:bg-desk-hover hover:text-desk-heading'
       )}
     >
       {icon}
       <span
         className={cn(
           'pointer-events-none absolute bottom-0.5 right-1 hidden text-[8px] font-bold sm:block',
-          active ? 'text-white/75' : 'text-slate-400'
+          active ? 'opacity-80' : 'text-desk-muted/80'
         )}
       >
         {shortcut.length <= 1 ? shortcut : ''}

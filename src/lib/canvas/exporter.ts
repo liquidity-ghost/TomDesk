@@ -1,7 +1,13 @@
-import { getObjectBBox } from './geometry';
+import { getObjectBBox, pointInBBox } from './geometry';
 import { canvasToPngBlob, renderRegionToCanvas } from './renderer';
 import { downloadBlob, sanitizeFilename } from '@/lib/utils';
-import type { BBox, PaperObject, PdfPageObject, SceneObject } from '@/types/scene';
+import type {
+  BBox,
+  PaperObject,
+  PdfPageObject,
+  PhotoObject,
+  SceneObject,
+} from '@/types/scene';
 
 function computeAllObjectsBBox(objects: SceneObject[]): BBox | null {
   if (objects.length === 0) return null;
@@ -40,15 +46,15 @@ export async function exportBoardAsPng(
 
   const canvas = renderRegionToCanvas(bounds, objects, {
     scale: 2,
-    backgroundColor: '#eef2f7',
+    backgroundColor: '#FDF2F8',
   });
   const blob = await canvasToPngBlob(canvas);
   downloadBlob(blob, `${sanitizeFilename(boardTitle)}.png`);
 }
 
 function sortSheetsForPdfExport(
-  sheets: Array<PaperObject | PdfPageObject>
-): Array<PaperObject | PdfPageObject> {
+  sheets: Array<PaperObject | PdfPageObject | PhotoObject>
+): Array<PaperObject | PdfPageObject | PhotoObject> {
   return [...sheets].sort((a, b) => {
     const rowDiff = Math.round(a.y / 250) - Math.round(b.y / 250);
     if (rowDiff !== 0) return rowDiff;
@@ -62,12 +68,21 @@ export async function exportBoardAsPdf(
 ): Promise<void> {
   const { jsPDF } = await import('jspdf');
   const list = Object.values(objects);
-  const sheets = sortSheetsForPdfExport(
-    list.filter(
-      (obj): obj is PaperObject | PdfPageObject =>
-        obj.type === 'paper' || obj.type === 'pdf-page'
-    )
+
+  const baseSheets = list.filter(
+    (obj): obj is PaperObject | PdfPageObject =>
+      obj.type === 'paper' || obj.type === 'pdf-page'
   );
+  const baseSheetBoxes = baseSheets.map((s) => getObjectBBox(s));
+
+  const standalonePhotos = list.filter((obj): obj is PhotoObject => {
+    if (obj.type !== 'photo') return false;
+    const cx = obj.x + obj.width / 2;
+    const cy = obj.y + obj.height / 2;
+    return !baseSheetBoxes.some((box) => pointInBBox(cx, cy, box));
+  });
+
+  const sheets = sortSheetsForPdfExport([...baseSheets, ...standalonePhotos]);
 
   const regions: Array<{ bbox: BBox; bg: string }> =
     sheets.length > 0
@@ -83,7 +98,7 @@ export async function exportBoardAsPdf(
               maxX: 794,
               maxY: 1123,
             },
-            bg: '#eef2f7',
+            bg: '#FDF2F8',
           },
         ];
 

@@ -42,34 +42,34 @@ export function SelectionActionBar({
   return (
     <div
       style={{ left, top }}
-      className="pointer-events-auto absolute z-30 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-slate-200 bg-white/95 p-1 shadow-lg backdrop-blur-md"
+      className="pointer-events-auto absolute z-30 flex -translate-x-1/2 items-center gap-1 rounded-xl border border-desk-border bg-desk-surface/95 p-1 shadow-lg backdrop-blur-md"
     >
       <button
         type="button"
         onClick={onToggleLock}
         title={allLocked ? 'Unlock selection' : 'Lock selection'}
-        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-slate-700 hover:bg-slate-100"
+        className="inline-flex items-center gap-1 rounded-lg px-2 py-1.5 text-xs font-medium text-desk-heading hover:bg-desk-hover"
       >
         {allLocked ? (
           <>
-            <Unlock className="h-3.5 w-3.5 text-amber-600" />
+            <Unlock className="h-3.5 w-3.5 text-desk-accent" />
             <span>Unlock</span>
           </>
         ) : (
           <>
-            <Lock className="h-3.5 w-3.5 text-slate-500" />
+            <Lock className="h-3.5 w-3.5 text-desk-muted" />
             <span>Lock</span>
           </>
         )}
       </button>
 
-      <div className="h-4 w-px bg-slate-200" />
+      <div className="h-4 w-px bg-desk-border" />
 
       <button
         type="button"
         onClick={onDuplicate}
         title="Duplicate (Cmd/Ctrl + D)"
-        className="rounded-lg p-1.5 text-slate-700 hover:bg-slate-100"
+        className="rounded-lg p-1.5 text-desk-body hover:bg-desk-hover hover:text-desk-heading"
       >
         <Copy className="h-3.5 w-3.5" />
       </button>
@@ -77,7 +77,7 @@ export function SelectionActionBar({
         type="button"
         onClick={onBringToFront}
         title="Bring to Front"
-        className="rounded-lg p-1.5 text-slate-700 hover:bg-slate-100"
+        className="rounded-lg p-1.5 text-desk-body hover:bg-desk-hover hover:text-desk-heading"
       >
         <ArrowUpToLine className="h-3.5 w-3.5" />
       </button>
@@ -85,18 +85,18 @@ export function SelectionActionBar({
         type="button"
         onClick={onSendToBack}
         title="Send to Back"
-        className="rounded-lg p-1.5 text-slate-700 hover:bg-slate-100"
+        className="rounded-lg p-1.5 text-desk-body hover:bg-desk-hover hover:text-desk-heading"
       >
         <ArrowDownToLine className="h-3.5 w-3.5" />
       </button>
 
-      <div className="h-4 w-px bg-slate-200" />
+      <div className="h-4 w-px bg-desk-border" />
 
       <button
         type="button"
         onClick={onDelete}
         title="Delete (Backspace / Del)"
-        className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50"
+        className="rounded-lg p-1.5 text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/60"
       >
         <Trash2 className="h-3.5 w-3.5" />
       </button>
